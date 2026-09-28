@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -35,9 +38,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -49,6 +56,53 @@ import com.example.engine.ScoreSystem
 import com.example.model.LevelData
 import com.example.model.TutorialStep
 
+/**
+ * Encapsulates performance rating evaluated based on move count relative to level par.
+ */
+data class PerformanceRating(
+    val tierTitle: String,
+    val rankBadge: String,
+    val praiseText: String,
+    val deltaText: String,
+    val efficiencyPercent: Int,
+    val accentColor: Color,
+    val starCount: Int
+)
+
+fun evaluatePerformanceRating(moves: Int, par: Int): PerformanceRating {
+    val delta = moves - par
+    val efficiency = if (moves > 0) ((par.toFloat() / moves.toFloat()) * 100).toInt().coerceIn(10, 100) else 100
+    return when {
+        moves <= par -> PerformanceRating(
+            tierTitle = "PERFECT RUN! 🏆",
+            rankBadge = "MASTER STATION MASTER 🇬🇭",
+            praiseText = "Flawless navigation! You untangled the lorry park at minimal Par target with zero wasted moves.",
+            deltaText = "★ Exact Par ($moves / $par moves · 100% Optimal)",
+            efficiencyPercent = efficiency,
+            accentColor = Color(0xFFF59E0B),
+            starCount = 3
+        )
+        moves <= par + 2 -> PerformanceRating(
+            tierTitle = "GREAT EFFORT! 🎯",
+            rankBadge = "EXPERT CONDUCTOR",
+            praiseText = "Sharp coordination! Fast passenger boarding with only +$delta moves from perfect Par.",
+            deltaText = "★ +$delta moves over Par ($moves / $par moves)",
+            efficiencyPercent = efficiency,
+            accentColor = Color(0xFF10B981),
+            starCount = 2
+        )
+        else -> PerformanceRating(
+            tierTitle = "SAFE ARRIVAL! 👍",
+            rankBadge = "STEADY DRIVER",
+            praiseText = "All passengers safely reached the terminal! Replay this station to aim for Par and claim 3 Stars.",
+            deltaText = "★ +$delta moves over Par ($moves / $par moves)",
+            efficiencyPercent = efficiency,
+            accentColor = Color(0xFF3B82F6),
+            starCount = 1
+        )
+    }
+}
+
 @Composable
 fun WinDialog(
     moves: Int,
@@ -56,32 +110,51 @@ fun WinDialog(
     stars: Int,
     scoreBreakdown: ScoreBreakdown? = null,
     unlockedNextLevel: LevelData? = null,
+    isReducedMotion: Boolean = false,
     onNextLevel: () -> Unit,
     onReplay: () -> Unit,
     onLevelSelect: () -> Unit
 ) {
+    val bannerScale = remember { Animatable(if (isReducedMotion) 1f else 0.7f) }
+    val starsScale = remember { Animatable(if (isReducedMotion) 1f else 0f) }
+    val rating = remember(moves, par) { evaluatePerformanceRating(moves, par) }
+
+    LaunchedEffect(Unit) {
+        if (!isReducedMotion) {
+            bannerScale.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow)
+            )
+            starsScale.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessLow)
+            )
+        }
+    }
+
     AlertDialog(
         onDismissRequest = {},
         confirmButton = {
             Button(
                 onClick = onNextLevel,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                modifier = Modifier.testTag("win_next_button")
             ) {
                 Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Next Level", fontWeight = FontWeight.Bold)
+                Text("Next Station", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             Row {
-                OutlinedButton(onClick = onReplay) {
+                OutlinedButton(onClick = onReplay, modifier = Modifier.testTag("win_replay_button")) {
                     Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Replay")
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                OutlinedButton(onClick = onLevelSelect) {
-                    Text("Levels")
+                OutlinedButton(onClick = onLevelSelect, modifier = Modifier.testTag("win_levels_button")) {
+                    Text("Stations")
                 }
             }
         },
@@ -90,26 +163,58 @@ fun WinDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = "STATION CLEAR! 🎉",
-                    fontWeight = FontWeight.Black,
-                    fontSize = 22.sp,
-                    color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                // 'Trotro Arrived!' Celebratory Banner
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .scale(bannerScale.value)
+                        .testTag("trotro_arrived_banner"),
+                    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                    shape = RoundedCornerShape(14.dp)
                 ) {
-                    repeat(3) { index ->
-                        val active = index < stars
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = if (active) "Star filled" else "Star empty",
-                            tint = if (active) Color(0xFFFBBF24) else Color(0xFF64748B),
-                            modifier = Modifier.size(36.dp)
-                        )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(
+                                        Color(0xFF9A3412), // Deep laterite earth
+                                        Color(0xFFD97706), // Trotro gold
+                                        Color(0xFFB45309)  // Warm ochre
+                                    )
+                                )
+                            )
+                            .border(2.dp, Color(0xFFFDE68A), RoundedCornerShape(14.dp))
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(text = "🚌", fontSize = 24.sp)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "TROTRO ARRIVED!",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 20.sp,
+                                    color = Color.White,
+                                    letterSpacing = 1.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(text = "🇬🇭", fontSize = 20.sp)
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Safe Journey · All Passengers Disembarked",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFEF3C7),
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }
@@ -119,11 +224,86 @@ fun WinDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = "All trotros boarded and departed safely!",
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center
-                )
+                // Highlighted Player Performance Rating based on move count
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("performance_rating_card"),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.5.dp, rating.accentColor)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = rating.accentColor.copy(alpha = 0.18f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, rating.accentColor)
+                        ) {
+                            Text(
+                                text = rating.rankBadge,
+                                color = rating.accentColor,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 0.8.sp,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = rating.tierTitle,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        // Animated Stars
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.scale(starsScale.value)
+                        ) {
+                            repeat(3) { index ->
+                                val active = index < rating.starCount
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = if (active) "Star earned" else "Star unearned",
+                                    tint = if (active) Color(0xFFFBBF24) else Color(0xFF64748B),
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = rating.deltaText,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = rating.accentColor
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = rating.praiseText,
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 15.sp,
+                            modifier = Modifier.padding(horizontal = 6.dp)
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Station Unlocked Callout Banner if a new station was unlocked

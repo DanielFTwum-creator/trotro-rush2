@@ -149,27 +149,9 @@ fun VehicleView(
     val xOffset = if (isHorizontal) bumpOffset.value.roundToInt() else 0
     val yOffset = if (!isHorizontal) bumpOffset.value.roundToInt() else 0
 
-    // Interactive drag gesture state
-    var dragProgressPx by remember { mutableFloatStateOf(0f) }
-    var dragTriggered by remember { mutableStateOf(false) }
-    val density = LocalDensity.current
-    val maxDragPx = with(density) { (cellSize * 0.75f).toPx() }
-    val thresholdPx = with(density) { (cellSize * 0.32f).toPx() }
-
-    val dragX = when (vehicle.direction) {
-        Direction.RIGHT -> dragProgressPx.coerceAtLeast(0f).roundToInt()
-        Direction.LEFT -> (-dragProgressPx.coerceAtLeast(0f)).roundToInt()
-        else -> 0
-    }
-    val dragY = when (vehicle.direction) {
-        Direction.DOWN -> dragProgressPx.coerceAtLeast(0f).roundToInt()
-        Direction.UP -> (-dragProgressPx.coerceAtLeast(0f)).roundToInt()
-        else -> 0
-    }
-
     Box(
         modifier = modifier
-            .offset { IntOffset(xOffset + dragX, yOffset + dragY) }
+            .offset { IntOffset(xOffset, yOffset) }
             .then(if (isHinted) Modifier.scale(hintScale) else Modifier)
             .size(width = vehicleWidth, height = vehicleHeight)
             .padding(2.dp)
@@ -177,39 +159,12 @@ fun VehicleView(
             .clip(shape)
             .background(bodyColor)
             .border(borderWidth, borderColor, shape)
-            .pointerInput(vehicle.id) {
-                detectDragGestures(
-                    onDragStart = {
-                        HapticFeedbackManager.performDragStart()
-                    },
-                    onDragEnd = {
-                        if (!dragTriggered && abs(dragProgressPx) < thresholdPx) {
-                            onClick()
-                        }
-                        dragProgressPx = 0f
-                        dragTriggered = false
-                    },
-                    onDragCancel = {
-                        dragProgressPx = 0f
-                        dragTriggered = false
-                    },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        val forwardDelta = when (vehicle.direction) {
-                            Direction.UP -> -dragAmount.y
-                            Direction.DOWN -> dragAmount.y
-                            Direction.LEFT -> -dragAmount.x
-                            Direction.RIGHT -> dragAmount.x
-                        }
-                        dragProgressPx = (dragProgressPx + forwardDelta).coerceIn(-15f, maxDragPx)
-                        if (!dragTriggered && dragProgressPx >= thresholdPx) {
-                            dragTriggered = true
-                            HapticFeedbackManager.performDragSnap()
-                            onClick()
-                        }
-                    }
-                )
-            }
+            .clickable(
+                onClick = {
+                    HapticFeedbackManager.performDragSnap()
+                    onClick()
+                }
+            )
             .semantics {
                 role = Role.Button
                 val hintNotice = if (isHinted) " (Optimal next move recommended)" else ""
@@ -217,10 +172,6 @@ fun VehicleView(
                 contentDescription = "${vehicle.colour.displayName} ${vehicle.type.displayName}$hintNotice$tutorialNotice, " +
                         "arrow ${vehicle.direction.name.lowercase()}, ${vehicle.seats} seats, " +
                         "row ${vehicle.row + 1} column ${vehicle.col + 1}"
-                onClick {
-                    onClick()
-                    true
-                }
             },
         contentAlignment = Alignment.Center
     ) {

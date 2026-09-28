@@ -97,6 +97,7 @@ import com.example.model.GameStatus
 import com.example.model.LevelData
 import com.example.model.TutorialStep
 import com.example.model.TutorialTargetSection
+import com.example.ui.components.ConfettiEffect
 import com.example.ui.components.GridBurstData
 import com.example.ui.components.LoseDialog
 import com.example.ui.components.PassengerView
@@ -465,25 +466,6 @@ fun PlayScreen(
                                     color = level.difficultyTier.badgeColor,
                                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                                 )
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFFF59E0B).copy(alpha = 0.15f),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.5f))
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("🏆", fontSize = 11.sp)
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text(
-                                        text = "%,d".format(liveScore),
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 12.sp,
-                                        color = Color(0xFFF59E0B)
-                                    )
-                                }
                             }
                         }
                         Row(
@@ -1064,15 +1046,7 @@ fun PlayScreen(
                     val boardHeight = effectiveCellSize * level.gridRows
 
                     Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .pointerInput(Unit) {
-                                detectTransformGestures { _, pan, zoom, _ ->
-                                    zoomScale = (zoomScale * zoom).coerceIn(0.7f, 2.2f)
-                                    panOffsetX += pan.x
-                                    panOffsetY += pan.y
-                                }
-                            },
+                        modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         Box(
@@ -1179,12 +1153,19 @@ fun PlayScreen(
             currentState.moves <= level.par + 2 -> 2
             else -> 1
         }
+        // Full-screen fluttering confetti celebration effect
+        ConfettiEffect(
+            modifier = Modifier.fillMaxSize(),
+            isReducedMotion = reducedMotion
+        )
+
         WinDialog(
             moves = currentState.moves,
             par = level.par,
             stars = stars,
             scoreBreakdown = winScoreBreakdown,
             unlockedNextLevel = newlyUnlockedLevelData,
+            isReducedMotion = reducedMotion,
             onNextLevel = {
                 showWinDialog = false
                 val next = com.example.levels.LevelRepository.levels.getOrNull(
