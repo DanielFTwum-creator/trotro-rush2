@@ -192,23 +192,73 @@ data class EngineState(
     val freeSlotsCount: Int get() = slots.count { it == null }
 }
 
-enum class TutorialStep(val title: String, val message: String) {
+enum class TutorialTargetSection {
+    CAR_PARK,
+    QUEUE,
+    SLOTS,
+    GENERAL
+}
+
+enum class TutorialStep(
+    val stepIndex: Int,
+    val totalSteps: Int,
+    val title: String,
+    val subtitle: String,
+    val message: String,
+    val mateTip: String,
+    val targetSection: TutorialTargetSection = TutorialTargetSection.GENERAL,
+    val targetVehicleId: String? = null,
+    val targetBadge: String? = null
+) {
     TAP_TO_MOVE(
-        "Tap to Move",
-        "Tap the green trotro with a clear exit path. It will drive directly into the parking bay."
+        stepIndex = 1,
+        totalSteps = 4,
+        title = "1. Tap Trotro with Clear Path",
+        subtitle = "Trotros only drive along their arrow",
+        message = "Every trotro has a directional arrow (↑, ↓, ←, →). If the forward path all the way to the station exit is empty, it drives straight into the parking bay!",
+        mateTip = "Conductor's Call: 'Accra! Accra direct!' Tap the highlighted trotro with the open lane.",
+        targetSection = TutorialTargetSection.CAR_PARK,
+        targetVehicleId = "v1",
+        targetBadge = "👇 TAP TO MOVE"
     ),
     BLOCKED_MOVE(
-        "Blocked Path",
-        "Vehicles cannot move if another car is blocking their arrow direction."
+        stepIndex = 2,
+        totalSteps = 4,
+        title = "2. Blocked Exit Paths",
+        subtitle = "Cannot drive through another vehicle",
+        message = "If another car blocks a trotro's arrow direction, it will bump and refuse to move. You must clear the blocking vehicle first to open up the intersection!",
+        mateTip = "Mate's Warning: 'Hold on driver!' The yellow car cannot pass through the blue trotro. Clear the blue trotro first!",
+        targetSection = TutorialTargetSection.CAR_PARK,
+        targetVehicleId = "v2",
+        targetBadge = "➔ CLEAR THIS FIRST"
     ),
     BOARDING(
-        "Matching Boarding",
-        "Passengers at the front of the queue automatically board vehicles of the same colour!"
+        stepIndex = 3,
+        totalSteps = 4,
+        title = "3. Passenger Matching & Boarding",
+        subtitle = "Front passenger boards matching trotro",
+        message = "Passengers wait in line at the station gate. When a trotro enters a bay, waiting passengers matching its colour board in queue order! When full, the trotro departs.",
+        mateTip = "Station Rule: Only the passenger standing at the gate can board. Colours must match!",
+        targetSection = TutorialTargetSection.QUEUE
     ),
     FULL_SLOTS(
-        "Parking Slots",
-        "Parking slots are limited. Fill a trotro to make it depart and free up a slot."
-    )
+        stepIndex = 4,
+        totalSteps = 4,
+        title = "4. Parking Bay Capacity & Gridlock",
+        subtitle = "Bays are limited (4 to 7 slots)",
+        message = "Parking bays are limited! If all bays fill up without matching the next waiting passenger, you will get stuck in gridlock. Full trotros depart to free up bays!",
+        mateTip = "Pro Tip: If you get stuck in gridlock, tap Undo to reverse moves or tap Hint for optimal routing.",
+        targetSection = TutorialTargetSection.SLOTS
+    );
+
+    fun nextStep(): TutorialStep? {
+        return when (this) {
+            TAP_TO_MOVE -> BLOCKED_MOVE
+            BLOCKED_MOVE -> BOARDING
+            BOARDING -> FULL_SLOTS
+            FULL_SLOTS -> null
+        }
+    }
 }
 
 enum class LevelTier(

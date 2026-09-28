@@ -219,9 +219,43 @@ fun SettingsScreen(
                             onCheckedChange = {
                                 repository.setHapticEnabled(it)
                                 HapticFeedbackManager.isEnabled = it
-                                if (it) HapticFeedbackManager.performMoveSuccess()
+                                if (it) HapticFeedbackManager.performVehicleSlotted(0)
                             }
                         )
+                    }
+
+                    if (hapticEnabled) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Preview Haptic Responses:",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = { HapticFeedbackManager.performDragStart() },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Drag", fontSize = 11.sp)
+                            }
+                            OutlinedButton(
+                                onClick = { HapticFeedbackManager.performDragSnap() },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Snap", fontSize = 11.sp)
+                            }
+                            OutlinedButton(
+                                onClick = { HapticFeedbackManager.performVehicleSlotted(0) },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Slotted", fontSize = 11.sp)
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))

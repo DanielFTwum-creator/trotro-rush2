@@ -1,10 +1,16 @@
 package com.example.ui.components
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,14 +25,23 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -35,12 +50,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.audio.HapticFeedbackManager
 import com.example.data.AppThemeMode
 import com.example.model.Axis
 import com.example.model.Direction
 import com.example.model.Vehicle
 import com.example.model.VehicleType
 import com.example.ui.theme.LocalAppThemeMode
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @Composable
@@ -50,6 +67,8 @@ fun VehicleView(
     modifier: Modifier = Modifier,
     isBlocked: Boolean = false,
     isClearToExit: Boolean = false,
+    isHinted: Boolean = false,
+    tutorialBadge: String? = null,
     onClick: () -> Unit
 ) {
     val themeMode = LocalAppThemeMode.current
@@ -64,10 +83,40 @@ fun VehicleView(
         AppThemeMode.HIGH_CONTRAST -> vehicle.colour.highContrastColor
     }
 
+    // Hint / Tutorial pulsating glow effect
+    val infiniteTransition = rememberInfiniteTransition(label = "hint_pulse")
+    val hintBorderAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.45f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "hint_border_alpha"
+    )
+    val hintScale by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.04f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "hint_scale"
+    )
+
+    val isTutorialTarget = tutorialBadge != null
     val borderColor = when {
         themeMode == AppThemeMode.HIGH_CONTRAST -> Color.White
+        isTutorialTarget -> Color(0xFF06B6D4).copy(alpha = hintBorderAlpha) // Radiant Cyan for Tutorial
+        isHinted -> Color(0xFFF59E0B).copy(alpha = hintBorderAlpha)
         isClearToExit -> Color(0xFF4ADE80) // Bright energetic green border when clear
         else -> Color(0x99FFFFFF)
+    }
+    val borderWidth = when {
+        isTutorialTarget -> 3.5.dp
+        isHinted -> 3.dp
+        isClearToExit -> 2.5.dp
+        else -> 2.dp
     }
     val shape = RoundedCornerShape(10.dp)
 
@@ -100,23 +149,115 @@ fun VehicleView(
     val xOffset = if (isHorizontal) bumpOffset.value.roundToInt() else 0
     val yOffset = if (!isHorizontal) bumpOffset.value.roundToInt() else 0
 
+    // Interactive drag gesture state
+    var dragProgressPx by remember { mutableFloatStateOf(0f) }
+    var dragTriggered by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
+    val maxDragPx = with(density) { (cellSize * 0.75f).toPx() }
+    val thresholdPx = with(density) { (cellSize * 0.32f).toPx() }
+
+    val dragX = when (vehicle.direction) {
+        Direction.RIGHT -> dragProgressPx.coerceAtLeast(0f).roundToInt()
+        Direction.LEFT -> (-dragProgressPx.coerceAtLeast(0f)).roundToInt()
+        else -> 0
+    }
+    val dragY = when (vehicle.direction) {
+        Direction.DOWN -> dragProgressPx.coerceAtLeast(0f).roundToInt()
+        Direction.UP -> (-dragProgressPx.coerceAtLeast(0f)).roundToInt()
+        else -> 0
+    }
+
     Box(
         modifier = modifier
-            .offset { IntOffset(xOffset, yOffset) }
+            .offset { IntOffset(xOffset + dragX, yOffset + dragY) }
+            .then(if (isHinted) Modifier.scale(hintScale) else Modifier)
             .size(width = vehicleWidth, height = vehicleHeight)
             .padding(2.dp)
-            .shadow(4.dp, shape)
+            .shadow(if (isHinted) 8.dp else 4.dp, shape)
             .clip(shape)
             .background(bodyColor)
-            .border(2.dp, borderColor, shape)
-            .clickable(role = Role.Button, onClick = onClick)
+            .border(borderWidth, borderColor, shape)
+            .pointerInput(vehicle.id) {
+                detectDragGestures(
+                    onDragStart = {
+                        HapticFeedbackManager.performDragStart()
+                    },
+                    onDragEnd = {
+                        if (!dragTriggered && abs(dragProgressPx) < thresholdPx) {
+                            onClick()
+                        }
+                        dragProgressPx = 0f
+                        dragTriggered = false
+                    },
+                    onDragCancel = {
+                        dragProgressPx = 0f
+                        dragTriggered = false
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        val forwardDelta = when (vehicle.direction) {
+                            Direction.UP -> -dragAmount.y
+                            Direction.DOWN -> dragAmount.y
+                            Direction.LEFT -> -dragAmount.x
+                            Direction.RIGHT -> dragAmount.x
+                        }
+                        dragProgressPx = (dragProgressPx + forwardDelta).coerceIn(-15f, maxDragPx)
+                        if (!dragTriggered && dragProgressPx >= thresholdPx) {
+                            dragTriggered = true
+                            HapticFeedbackManager.performDragSnap()
+                            onClick()
+                        }
+                    }
+                )
+            }
             .semantics {
-                contentDescription = "${vehicle.colour.displayName} ${vehicle.type.displayName}, " +
+                role = Role.Button
+                val hintNotice = if (isHinted) " (Optimal next move recommended)" else ""
+                val tutorialNotice = if (tutorialBadge != null) " (Tutorial Target: $tutorialBadge)" else ""
+                contentDescription = "${vehicle.colour.displayName} ${vehicle.type.displayName}$hintNotice$tutorialNotice, " +
                         "arrow ${vehicle.direction.name.lowercase()}, ${vehicle.seats} seats, " +
                         "row ${vehicle.row + 1} column ${vehicle.col + 1}"
+                onClick {
+                    onClick()
+                    true
+                }
             },
         contentAlignment = Alignment.Center
     ) {
+        if (tutorialBadge != null) {
+            Box(
+                modifier = Modifier
+                    .align(if (isHinted) Alignment.BottomStart else Alignment.TopStart)
+                    .padding(2.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color(0xFF06B6D4))
+                    .padding(horizontal = 4.dp, vertical = 1.dp)
+            ) {
+                Text(
+                    text = tutorialBadge,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.Black
+                )
+            }
+        }
+        if (isHinted) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(3.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color(0xFFF59E0B))
+                    .padding(horizontal = 4.dp, vertical = 1.dp)
+            ) {
+                Text(
+                    text = "💡 NEXT",
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.Black
+                )
+            }
+        }
         if (isHorizontal) {
             // Horizontal layout
             Row(

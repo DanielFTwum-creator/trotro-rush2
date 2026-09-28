@@ -13,6 +13,10 @@ class HapticFeedbackTest {
         assertTrue(HapticFeedbackManager.isEnabled)
 
         // Ensure safe calls without crash even before init / without hardware vibrator
+        HapticFeedbackManager.performDragStart()
+        HapticFeedbackManager.performDragSnap()
+        HapticFeedbackManager.performVehicleSlotted(0)
+        HapticFeedbackManager.performVehicleSlotted(2)
         HapticFeedbackManager.performMoveSuccess()
         HapticFeedbackManager.performObstacleHit()
         HapticFeedbackManager.performNoSlot()
@@ -22,6 +26,9 @@ class HapticFeedbackTest {
         HapticFeedbackManager.isEnabled = false
         assertFalse(HapticFeedbackManager.isEnabled)
 
+        HapticFeedbackManager.performDragStart()
+        HapticFeedbackManager.performDragSnap()
+        HapticFeedbackManager.performVehicleSlotted(0)
         HapticFeedbackManager.performMoveSuccess()
         HapticFeedbackManager.performObstacleHit()
 

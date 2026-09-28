@@ -143,6 +143,10 @@ class AppRepository(context: Context) {
         return progressDao.getProgressForLevel(levelId)?.highScore ?: 0
     }
 
+    suspend fun isLevelCompleted(levelId: String): Boolean {
+        return progressDao.getProgressForLevel(levelId)?.isCompleted == true
+    }
+
     suspend fun recordWin(levelId: String, moves: Int, par: Int, score: Int = 0): String? {
         // Determine stars: 3 stars if moves <= par; 2 stars if moves <= par + 2; 1 star otherwise
         val stars = when {

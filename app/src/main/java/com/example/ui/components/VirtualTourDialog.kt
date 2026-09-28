@@ -49,6 +49,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -82,7 +85,7 @@ fun VirtualTourDialog(
                 badge = "WELCOME TO ACCRA CENTRAL",
                 title = "The Lorry Park Traffic Jam",
                 subtitle = "Vehicles are gridlocked trying to escape the station yard!",
-                description = "Welcome to Trotro Rush! The lorry park is completely packed with colourful trotros, 207 sprinters, and buses. Every driver wants to get out to load waiting passengers, but vehicles are tightly jammed and blocking each other's path.",
+                description = "Welcome to Trotro Rush! The lorry park is completely packed with colourful trotros, 207 Sprinters, and buses. Every driver wants to escape the yard to pick up waiting passengers, but vehicles are tightly jammed and blocking each other's path.",
                 tip = "Ghanaian Wisdom: 'Nyame Bekyere' — Patience and sharp eyes will clear the road!"
             ),
             TourSlide(
@@ -119,7 +122,7 @@ fun VirtualTourDialog(
                 title = "Unlimited Undo & 3 Stars",
                 subtitle = "No timers, no lives, zero stress!",
                 description = "Made a wrong move? Tap the Undo button anytime to rewind your moves back to safety. Clear all queue passengers in minimum moves to match the Par target and earn 3 Golden Stars across 40 stations in Ghana!",
-                tip = "You are ready to command the yard, Station Master! Tap 'Start Playing' below."
+                tip = "You are ready to command the yard, Station Master! Tap 'Start Playing!' below."
             )
         )
     }
@@ -173,9 +176,16 @@ fun VirtualTourDialog(
                             SoundPlayer.playClick()
                             onDismiss()
                         },
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier
+                            .size(40.dp)
+                            .testTag("tour_close_button")
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = "Close Tour", tint = MaterialTheme.colorScheme.outline)
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close Tour",
+                            tint = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
                 }
 
@@ -244,7 +254,7 @@ fun VirtualTourDialog(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // Interactive illustration preview for step
+                        // Interactive illustration preview for step with unified accessibility semantics
                         TourStepIllustration(stepIndex = current.stepNumber)
 
                         Spacer(modifier = Modifier.height(12.dp))
@@ -259,11 +269,15 @@ fun VirtualTourDialog(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // Tip Card
+                        // Tip Card with grouped TalkBack announcement
                         Card(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                             shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .semantics(mergeDescendants = true) {
+                                    contentDescription = "Station Master Tip: ${current.tip}"
+                                }
                         ) {
                             Text(
                                 text = "💡 ${current.tip}",
@@ -279,11 +293,15 @@ fun VirtualTourDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Progress Step Dots
+                // Progress Step Dots with semantic indicator
                 Row(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics(mergeDescendants = true) {
+                            contentDescription = "Step ${currentStep + 1} of ${slides.size}"
+                        }
                 ) {
                     slides.indices.forEach { index ->
                         Box(
@@ -361,30 +379,55 @@ fun VirtualTourDialog(
 
 @Composable
 private fun TourStepIllustration(stepIndex: Int) {
+    val illustrationSemantic = when (stepIndex) {
+        1 -> "Illustration: Trotros jammed at the lorry park with collision and no-entry blocked lanes"
+        2 -> "Illustration: Trotro following clear green arrow path into station exit gate"
+        3 -> "Illustration: Loading bays with red and blue parked trotros and free slots"
+        4 -> "Illustration: Passenger queue at the station gate boarding a matching red trotro"
+        else -> "Illustration: Three stars award for par performance and unlimited undo replay control"
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(72.dp),
+            .semantics(mergeDescendants = true) {
+                contentDescription = illustrationSemantic
+            },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
         shape = RoundedCornerShape(10.dp),
         border = CardDefaults.outlinedCardBorder()
     ) {
         Box(
-            modifier = Modifier.fillMaxWidth().height(72.dp).padding(6.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp, horizontal = 8.dp),
             contentAlignment = Alignment.Center
         ) {
             when (stepIndex) {
                 1 -> {
-                    // Gridlocked Yard Illustration
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    // Gridlocked Yard Illustration with explicit explanation and caption
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        MiniTrotroIllustration(color = Colour.RED, slogan = "Nyame", dir = "↑")
-                        Text("💥", fontSize = 16.sp)
-                        MiniTrotroIllustration(color = Colour.BLUE, slogan = "Sea Never", dir = "→")
-                        Text("⛔", fontSize = 16.sp)
-                        MiniTrotroIllustration(color = Colour.YELLOW, slogan = "Slow", dir = "↓")
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            MiniTrotroIllustration(color = Colour.RED, slogan = "Nyame", dir = "↑")
+                            Text("💥", fontSize = 16.sp)
+                            MiniTrotroIllustration(color = Colour.BLUE, slogan = "Sea Never", dir = "→")
+                            Text("⛔", fontSize = 16.sp)
+                            MiniTrotroIllustration(color = Colour.YELLOW, slogan = "Slow", dir = "↓")
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "💥 Traffic collision ahead  ·  ⛔ Lane blocked by another trotro",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
                 2 -> {

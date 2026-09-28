@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -27,8 +28,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CropFree
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
@@ -38,6 +42,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,6 +53,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -78,26 +84,34 @@ import androidx.compose.ui.unit.sp
 import com.example.audio.HapticFeedbackManager
 import com.example.audio.SoundPlayer
 import com.example.data.AppRepository
+import com.example.engine.HintResult
+import com.example.engine.HintSystem
 import com.example.engine.RulesEngine
 import com.example.engine.ScoreBreakdown
 import com.example.engine.ScoreSystem
 import com.example.levels.LevelRepository
+import com.example.model.Direction
 import com.example.model.EngineEvent
 import com.example.model.EngineState
 import com.example.model.GameStatus
 import com.example.model.LevelData
 import com.example.model.TutorialStep
+import com.example.model.TutorialTargetSection
+import com.example.ui.components.GridBurstData
 import com.example.ui.components.LoseDialog
 import com.example.ui.components.PassengerView
 import com.example.ui.components.PauseDialog
+import com.example.ui.components.RoadDustGridBurst
 import com.example.ui.components.SlotView
 import com.example.ui.components.TutorialOverlay
 import com.example.ui.components.VehicleView
 import com.example.ui.components.VirtualTourDialog
 import com.example.ui.components.WinDialog
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -142,6 +156,12 @@ fun PlayScreen(
         )
     }
 
+    // CI Solver Hint System State
+    var activeHint by remember(level.id) { mutableStateOf<HintResult?>(null) }
+    var isCalculatingHint by remember { mutableStateOf(false) }
+    var hintsUsedCount by remember(level.id) { mutableIntStateOf(0) }
+    var consecutiveBlockedMoves by remember(level.id) { mutableIntStateOf(0) }
+
     // Zoom and pan state for dense boards
     var zoomScale by remember { mutableFloatStateOf(1.0f) }
     var panOffsetX by remember { mutableFloatStateOf(0f) }
@@ -157,9 +177,22 @@ fun PlayScreen(
     var winScoreBreakdown by remember { mutableStateOf<ScoreBreakdown?>(null) }
     var newlyUnlockedLevelData by remember(level.id) { mutableStateOf<LevelData?>(null) }
     var previousHighScore by remember(level.id) { mutableIntStateOf(0) }
+    var isLevelCompletedPreviously by remember(level.id) { mutableStateOf(false) }
+
+    val reducedMotion by repository.reducedMotion.collectAsState(initial = false)
+
+    // Road Dust particle animation state
+    var lastMovedSlotIndex by remember { mutableStateOf<Int?>(null) }
+    var lastMoveTrigger by remember { mutableStateOf(0L) }
+    var lastGridBurst by remember { mutableStateOf<GridBurstData?>(null) }
 
     LaunchedEffect(level.id) {
         previousHighScore = repository.getHighScoreForLevel(level.id)
+        isLevelCompletedPreviously = repository.isLevelCompleted(level.id)
+        if (isLevelCompletedPreviously) {
+            // Per REQ-LVL-006: shall not appear again once the level is won
+            currentTutorialStep = null
+        }
     }
 
     LaunchedEffect(level.id, isPaused, currentState.status) {
@@ -200,11 +233,80 @@ fun PlayScreen(
         }
     }
 
+    fun requestHint() {
+        if (currentState.status != GameStatus.PLAYING || isCalculatingHint) return
+        SoundPlayer.playClick()
+        isCalculatingHint = true
+        scope.launch {
+            val result = withContext(Dispatchers.Default) {
+                HintSystem.getHint(currentState)
+            }
+            isCalculatingHint = false
+            activeHint = result
+            when (result) {
+                is HintResult.Success -> {
+                    hintsUsedCount++
+                    lastAnnouncement = "Hint: Move ${result.nextVehicle.colour.displayName} ${result.nextVehicle.type.displayName} heading ${result.nextVehicle.direction.name.lowercase()}."
+                    HapticFeedbackManager.performDragSnap()
+                }
+                is HintResult.Deadlock -> {
+                    lastAnnouncement = "Station Deadlock detected. Tap Undo to unblock bays."
+                    HapticFeedbackManager.performObstacleHit()
+                }
+                is HintResult.NoSolutionFound -> {
+                    lastAnnouncement = "No optimal move found within search limit."
+                }
+                is HintResult.AlreadyWon -> {
+                    lastAnnouncement = "Level already completed."
+                }
+            }
+        }
+    }
+
     fun handleVehicleClick(vehicleId: String) {
         if (currentState.status != GameStatus.PLAYING) return
         SoundPlayer.playClick()
 
+        val vehicleToMove = currentState.carPark.find { it.id == vehicleId }
         val (nextState, events) = RulesEngine.applyAction(currentState, vehicleId)
+
+        // Clear active hint when matching recommended move is executed
+        if (activeHint is HintResult.Success && (activeHint as HintResult.Success).nextVehicleId == vehicleId) {
+            activeHint = null
+        }
+
+        // Interactive tutorial sequence progression based on events
+        if (!isLevelCompletedPreviously) {
+            val moved = events.any { it is EngineEvent.Moved }
+            val boarded = events.any { it is EngineEvent.Boarded }
+            val blocked = events.any { it is EngineEvent.Blocked }
+            val noSlot = events.any { it is EngineEvent.NoFreeSlot }
+
+            when {
+                blocked -> {
+                    currentTutorialStep = TutorialStep.BLOCKED_MOVE
+                }
+                noSlot -> {
+                    currentTutorialStep = TutorialStep.FULL_SLOTS
+                }
+                moved && boarded && currentTutorialStep == TutorialStep.TAP_TO_MOVE -> {
+                    currentTutorialStep = TutorialStep.BOARDING
+                }
+                moved && currentTutorialStep == TutorialStep.BOARDING -> {
+                    val anyBlocked = nextState.carPark.any { !RulesEngine.legalActions(nextState).contains(it.id) }
+                    if (anyBlocked) {
+                        currentTutorialStep = TutorialStep.BLOCKED_MOVE
+                    } else if (nextState.slots.count { it != null } >= 2) {
+                        currentTutorialStep = TutorialStep.FULL_SLOTS
+                    }
+                }
+                moved && currentTutorialStep == TutorialStep.BLOCKED_MOVE -> {
+                    if (nextState.slots.count { it != null } >= 2) {
+                        currentTutorialStep = TutorialStep.FULL_SLOTS
+                    }
+                }
+            }
+        }
 
         // Process audio and announcements for each event
         for (event in events) {
@@ -212,15 +314,31 @@ fun PlayScreen(
                 is EngineEvent.Moved -> {
                     // Record previous state for unlimited undo
                     undoStack.add(currentState)
+                    activeHint = null
+                    consecutiveBlockedMoves = 0
                     SoundPlayer.playMove()
-                    HapticFeedbackManager.performMoveSuccess()
+                    HapticFeedbackManager.performVehicleSlotted(event.slotIndex)
                     if (hapticEnabled) {
                         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                     }
                     lastAnnouncement = "Trotro moved to slot ${event.slotIndex + 1}"
+
+                    // Trigger subtle road dust particle animation around trotro vehicle in new slot
+                    lastMovedSlotIndex = event.slotIndex
+                    val now = System.currentTimeMillis()
+                    lastMoveTrigger = now
+                    if (vehicleToMove != null) {
+                        lastGridBurst = GridBurstData(
+                            row = vehicleToMove.row,
+                            col = vehicleToMove.col,
+                            direction = vehicleToMove.direction,
+                            timestamp = now
+                        )
+                    }
                 }
                 is EngineEvent.Blocked -> {
                     blockedVehicleId = event.vehicleId
+                    consecutiveBlockedMoves++
                     SoundPlayer.playBlocked()
                     HapticFeedbackManager.performObstacleHit()
                     if (hapticEnabled) {
@@ -286,6 +404,10 @@ fun PlayScreen(
             val previous = undoStack.removeAt(undoStack.lastIndex)
             currentState = previous
             blockedVehicleId = null
+            activeHint = null
+            consecutiveBlockedMoves = 0
+            lastMovedSlotIndex = null
+            lastGridBurst = null
             showLoseDialog = false
             SoundPlayer.playMove()
             HapticFeedbackManager.performMoveSuccess()
@@ -302,7 +424,11 @@ fun PlayScreen(
     fun handleRestart() {
         undoStack.clear()
         currentState = RulesEngine.createState(level)
+        activeHint = null
+        consecutiveBlockedMoves = 0
         elapsedSeconds = 0
+        lastMovedSlotIndex = null
+        lastGridBurst = null
         winScoreBreakdown = null
         newlyUnlockedLevelData = null
         showWinDialog = false
@@ -396,8 +522,38 @@ fun PlayScreen(
                             tint = if (undoStack.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.38f)
                         )
                     }
-                    IconButton(onClick = { showTourDialog = true }) {
-                        Icon(Icons.Default.HelpOutline, contentDescription = "Station Tour & Rules")
+                    IconButton(
+                        onClick = ::requestHint,
+                        enabled = currentState.status == GameStatus.PLAYING && !isCalculatingHint,
+                        modifier = Modifier.testTag("hint_appbar_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lightbulb,
+                            contentDescription = "Hint - Suggest optimal move",
+                            tint = if (activeHint != null) Color(0xFFF59E0B) else MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            currentTutorialStep = if (currentTutorialStep != null) null else TutorialStep.TAP_TO_MOVE
+                        },
+                        modifier = Modifier.testTag("tutorial_toggle_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.HelpOutline,
+                            contentDescription = "Interactive Tutorial Guide",
+                            tint = if (currentTutorialStep != null) Color(0xFF06B6D4) else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    IconButton(
+                        onClick = { showTourDialog = true },
+                        modifier = Modifier.testTag("tour_appbar_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Explore,
+                            contentDescription = "Station Tour & Rules",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                     IconButton(onClick = { isPaused = true }) {
                         Icon(Icons.Default.Pause, contentDescription = "Pause game")
@@ -410,7 +566,7 @@ fun PlayScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            // Bottom Action Bar: Undo, Restart, and Accessibility Summary
+            // Bottom Action Bar: Undo, Hint (CI Solver), Restart
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
@@ -419,8 +575,8 @@ fun PlayScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Button(
@@ -428,6 +584,7 @@ fun PlayScreen(
                         enabled = undoStack.isNotEmpty(),
                         modifier = Modifier
                             .testTag("undo_button")
+                            .weight(1f)
                             .height(48.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -437,22 +594,54 @@ fun PlayScreen(
                         )
                     ) {
                         Icon(Icons.Default.Undo, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = if (undoStack.isNotEmpty()) "Undo (${undoStack.size})" else "Undo",
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
                         )
+                    }
+
+                    // CI Solver Hint Button
+                    Button(
+                        onClick = ::requestHint,
+                        enabled = currentState.status == GameStatus.PLAYING && !isCalculatingHint,
+                        modifier = Modifier
+                            .testTag("hint_button")
+                            .weight(1.15f)
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFF59E0B),
+                            contentColor = Color.Black,
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                        )
+                    ) {
+                        if (isCalculatingHint) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = Color.Black,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Solving...", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        } else {
+                            Icon(Icons.Default.Lightbulb, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Hint", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        }
                     }
 
                     OutlinedButton(
                         onClick = ::handleRestart,
                         modifier = Modifier
                             .testTag("restart_button")
+                            .weight(1f)
                             .height(48.dp)
                     ) {
                         Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Restart")
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Restart", fontSize = 13.sp)
                     }
                 }
             }
@@ -479,7 +668,8 @@ fun PlayScreen(
             currentTutorialStep?.let { step ->
                 TutorialOverlay(
                     step = step,
-                    onDismiss = { currentTutorialStep = null }
+                    onDismiss = { currentTutorialStep = null },
+                    onNext = { currentTutorialStep = step.nextStep() }
                 )
             }
 
@@ -588,12 +778,14 @@ fun PlayScreen(
             }
 
             // 1. PASSENGER QUEUE SECTION (Figure 1)
+            val isQueueTutorialTarget = currentTutorialStep?.targetSection == TutorialTargetSection.QUEUE
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 4.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                border = if (isQueueTutorialTarget) androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF06B6D4)) else null
             ) {
                 Column(modifier = Modifier.padding(8.dp)) {
                     Row(
@@ -682,12 +874,14 @@ fun PlayScreen(
             }
 
             // 2. PARKING SLOTS SECTION (Figure 1)
+            val isSlotsTutorialTarget = currentTutorialStep?.targetSection == TutorialTargetSection.SLOTS
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 4.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                border = if (isSlotsTutorialTarget) androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF06B6D4)) else null
             ) {
                 Column(modifier = Modifier.padding(8.dp)) {
                     Row(
@@ -719,9 +913,93 @@ fun PlayScreen(
                             SlotView(
                                 slotIndex = index,
                                 vehicle = vehicle,
+                                isRecentlyMoved = (index == lastMovedSlotIndex),
+                                moveTrigger = lastMoveTrigger,
+                                isReducedMotion = reducedMotion,
                                 modifier = Modifier.weight(1f)
                             )
                         }
+                    }
+                }
+            }
+
+            // CI Solver Hint Banner (Success)
+            (activeHint as? HintResult.Success)?.let { hint ->
+                HintBanner(
+                    hint = hint,
+                    onExecute = { handleVehicleClick(hint.nextVehicleId) },
+                    onDismiss = { activeHint = null }
+                )
+            }
+
+            // CI Solver Deadlock Banner (Warning)
+            (activeHint as? HintResult.Deadlock)?.let { deadlock ->
+                DeadlockBanner(
+                    deadlock = deadlock,
+                    onUndo = ::handleUndo,
+                    onRestart = ::handleRestart,
+                    onDismiss = { activeHint = null }
+                )
+            }
+
+            // No Solution / Search Limit Info
+            (activeHint as? HintResult.NoSolutionFound)?.let { noSol ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "💡 ${noSol.message}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = { activeHint = null }, modifier = Modifier.size(24.dp)) {
+                            Icon(Icons.Default.Close, contentDescription = "Dismiss", modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            }
+
+            // Gentle assistance prompt when user hits 3 blocked moves consecutively
+            if (consecutiveBlockedMoves >= 3 && activeHint == null && currentState.status == GameStatus.PLAYING) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 2.dp)
+                        .clickable { requestHint() },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF3C7)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF59E0B))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("💡", fontSize = 13.sp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Traffic jammed? Tap for CI Solver Hint!",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF92400E)
+                            )
+                        }
+                        Text("Ask Mate ➔", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color(0xFFD97706))
                     }
                 }
             }
@@ -814,15 +1092,37 @@ fun PlayScreen(
                                 }
                             }
 
+                            // Road dust skid burst at departure cell
+                            lastGridBurst?.let { burst ->
+                                RoadDustGridBurst(
+                                    cellSize = effectiveCellSize,
+                                    direction = burst.direction,
+                                    triggerKey = burst.timestamp,
+                                    isReducedMotion = reducedMotion,
+                                    modifier = Modifier
+                                        .offset(
+                                            x = effectiveCellSize * burst.col,
+                                            y = effectiveCellSize * burst.row
+                                        )
+                                        .size(effectiveCellSize)
+                                )
+                            }
+
                             // Render Jammed Vehicles on the Car Park
                             currentState.carPark.forEach { vehicle ->
                                 val isBlocked = (blockedVehicleId == vehicle.id)
                                 val isClear = legalVehicleIds.contains(vehicle.id)
+                                val isHinted = (vehicle.id == (activeHint as? HintResult.Success)?.nextVehicleId)
+                                val tutorialBadge = if (currentTutorialStep?.targetVehicleId == vehicle.id) {
+                                    currentTutorialStep?.targetBadge
+                                } else null
                                 VehicleView(
                                     vehicle = vehicle,
                                     cellSize = effectiveCellSize,
                                     isBlocked = isBlocked,
                                     isClearToExit = isClear,
+                                    isHinted = isHinted,
+                                    tutorialBadge = tutorialBadge,
                                     modifier = Modifier.offset(
                                         x = effectiveCellSize * vehicle.col,
                                         y = effectiveCellSize * vehicle.row
@@ -936,5 +1236,176 @@ fun PlayScreen(
         VirtualTourDialog(
             onDismiss = { showTourDialog = false }
         )
+    }
+}
+
+@Composable
+fun HintBanner(
+    hint: HintResult.Success,
+    onExecute: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+            .testTag("hint_banner"),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFEF3C7)
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFF59E0B)),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "💡", fontSize = 16.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "STATION MASTER'S HINT",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 12.sp,
+                        color = Color(0xFF92400E)
+                    )
+                }
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF59E0B)
+                ) {
+                    Text(
+                        text = "${hint.totalMovesRemaining} moves to win",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = hint.reason,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF78350F),
+                lineHeight = 16.sp
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    Text("Dismiss", color = Color(0xFF92400E), fontSize = 12.sp)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = onExecute,
+                    modifier = Modifier.height(36.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFD97706),
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Execute Move ➔", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DeadlockBanner(
+    deadlock: HintResult.Deadlock,
+    onUndo: () -> Unit,
+    onRestart: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+            .testTag("deadlock_banner"),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFEE2E2)
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFEF4444)),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "⚠️", fontSize = 16.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = deadlock.title.uppercase(),
+                        fontWeight = FontWeight.Black,
+                        fontSize = 12.sp,
+                        color = Color(0xFF991B1B)
+                    )
+                }
+                IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
+                    Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = Color(0xFF991B1B), modifier = Modifier.size(16.dp))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = deadlock.message,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF7F1D1D),
+                lineHeight = 16.sp
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (deadlock.canUndo) {
+                    OutlinedButton(
+                        onClick = onUndo,
+                        modifier = Modifier.height(36.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Undo Move", color = Color(0xFF991B1B), fontSize = 12.sp)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Button(
+                    onClick = onRestart,
+                    modifier = Modifier.height(36.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFDC2626),
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Restart Level", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            }
+        }
     }
 }

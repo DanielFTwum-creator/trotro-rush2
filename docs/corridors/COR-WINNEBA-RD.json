@@ -1,0 +1,154 @@
+{
+  "corridorId": "COR-WINNEBA-RD",
+  "corridorName": "Winneba Road - Kaneshie - Mallam - Weija - Kasoa Corridor",
+  "direction": "OUTBOUND",
+  "originTerminal": "Kaneshie Market Complex Terminal",
+  "destinationTerminal": "Kasoa New Market Station",
+  "levels": [
+    {
+      "levelId": "L028",
+      "stopName": "Kaneshie Market Complex Terminal",
+      "canonicalLandmark": "Multi-tier Kaneshie transport and market terminal",
+      "sequenceIndex": 1,
+      "stopType": "TERMINAL_HUB",
+      "callout": "Kasoa, Kasoa! Winneba road express!",
+      "popularSlogans": [
+        "Kaneshie King",
+        "Sea Never Dry",
+        "God's Time"
+      ],
+      "tier": "BEGINNER"
+    },
+    {
+      "levelId": "L029",
+      "stopName": "First Light",
+      "canonicalLandmark": "Traffic intersection at Bubuashie link",
+      "sequenceIndex": 2,
+      "stopType": "MAJOR_JUNCTION",
+      "callout": "First Light drop! Bubuashie side!",
+      "popularSlogans": [
+        "All Shall Pass",
+        "Patience"
+      ],
+      "tier": "BEGINNER"
+    },
+    {
+      "levelId": "L030",
+      "stopName": "Odorkor Tipper",
+      "canonicalLandmark": "Odorkor lorry terminal & market",
+      "sequenceIndex": 3,
+      "stopType": "MAJOR_JUNCTION",
+      "callout": "Odorkor! Tipper station drop!",
+      "popularSlogans": [
+        "Slow But Sure",
+        "Envy No Man"
+      ],
+      "tier": "BEGINNER"
+    },
+    {
+      "levelId": "L031",
+      "stopName": "Sakaman Junction",
+      "canonicalLandmark": "Sakaman estate turnoff",
+      "sequenceIndex": 4,
+      "stopType": "ROADSIDE_STAGE",
+      "callout": "Sakaman! Blue Gate drop!",
+      "popularSlogans": [
+        "Nyame Nhyira",
+        "Work and Happiness"
+      ],
+      "tier": "INTERMEDIATE"
+    },
+    {
+      "levelId": "L032",
+      "stopName": "Mallam Junction / Market",
+      "canonicalLandmark": "Mallam interchange & Gbawe link",
+      "sequenceIndex": 5,
+      "stopType": "MAJOR_JUNCTION",
+      "callout": "Mallam Junction! Interchange under bridge!",
+      "popularSlogans": [
+        "No Hurry in Life",
+        "Destiny"
+      ],
+      "tier": "INTERMEDIATE"
+    },
+    {
+      "levelId": "L033",
+      "stopName": "McCarthy Hill",
+      "canonicalLandmark": "Scenic hill ascent roadside stage",
+      "sequenceIndex": 6,
+      "stopType": "ROADSIDE_STAGE",
+      "callout": "McCarthy Hill foot! Hill drop!",
+      "popularSlogans": [
+        "Fear Women",
+        "On God"
+      ],
+      "tier": "INTERMEDIATE"
+    },
+    {
+      "levelId": "L034",
+      "stopName": "Weija Barrier / Old Toll Booth",
+      "canonicalLandmark": "Densu river dam & historic barrier",
+      "sequenceIndex": 7,
+      "stopType": "MAJOR_JUNCTION",
+      "callout": "Weija Barrier! Dam side alighting!",
+      "popularSlogans": [
+        "Who Knows Tomorrow",
+        "Time Will Tell"
+      ],
+      "tier": "RUSH_HOUR"
+    },
+    {
+      "levelId": "L035",
+      "stopName": "SCC / Barrier",
+      "canonicalLandmark": "State Construction Corporation depot stage",
+      "sequenceIndex": 8,
+      "stopType": "ROADSIDE_STAGE",
+      "callout": "SCC! Block factory drop!",
+      "popularSlogans": [
+        "Never Give Up",
+        "Hard Work"
+      ],
+      "tier": "RUSH_HOUR"
+    },
+    {
+      "levelId": "L036",
+      "stopName": "West Hills Mall / Dunkonah",
+      "canonicalLandmark": "Major regional retail mall pedestrian access",
+      "sequenceIndex": 9,
+      "stopType": "MAJOR_JUNCTION",
+      "callout": "Mall gate! West Hills overpass!",
+      "popularSlogans": [
+        "In God We Trust",
+        "Show Love"
+      ],
+      "tier": "RUSH_HOUR"
+    },
+    {
+      "levelId": "L037",
+      "stopName": "Kasoa Toll Booth / CP",
+      "canonicalLandmark": "Central Region boundary entry",
+      "sequenceIndex": 10,
+      "stopType": "ROADSIDE_STAGE",
+      "callout": "Toll booth! CP stage drop!",
+      "popularSlogans": [
+        "By Grace",
+        "Abaawa"
+      ],
+      "tier": "RUSH_HOUR"
+    },
+    {
+      "levelId": "L038",
+      "stopName": "Kasoa New Market Station",
+      "canonicalLandmark": "Central regional multi-acre commercial bus terminal",
+      "sequenceIndex": 11,
+      "stopType": "TERMINAL_HUB",
+      "callout": "Kasoa last stop! Flyover under, new market terminal!",
+      "popularSlogans": [
+        "Kasoa Express",
+        "Journey of Mercies",
+        "God is Good"
+      ],
+      "tier": "RUSH_HOUR"
+    }
+  ]
+}

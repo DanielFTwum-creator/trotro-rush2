@@ -25,12 +25,35 @@ object Solver {
      * Solves a level using Breadth-First Search (BFS) to guarantee the shortest winning sequence (Par).
      */
     fun solve(level: LevelData, maxStates: Int = 50_000, timeLimitMs: Long = 10_000): SolveResult {
-        val startTime = System.currentTimeMillis()
         val initialState = RulesEngine.createState(level)
+        return solveFromState(initialState, maxStates, timeLimitMs)
+    }
 
-        if (initialState.status == GameStatus.WON) {
+    /**
+     * Solves from any arbitrary in-progress or initial engine state.
+     * Guaranteed shortest sequence to GameStatus.WON via Breadth-First Search.
+     */
+    fun solveFromState(
+        currentState: EngineState,
+        maxStates: Int = 35_000,
+        timeLimitMs: Long = 5_000
+    ): SolveResult {
+        val startTime = System.currentTimeMillis()
+
+        if (currentState.status == GameStatus.WON) {
             return SolveResult(
                 isSolvable = true,
+                par = 0,
+                winningSequence = emptyList(),
+                statesExplored = 1,
+                maxBranching = 0,
+                executionTimeMs = System.currentTimeMillis() - startTime
+            )
+        }
+
+        if (currentState.status == GameStatus.LOST) {
+            return SolveResult(
+                isSolvable = false,
                 par = 0,
                 winningSequence = emptyList(),
                 statesExplored = 1,
@@ -42,9 +65,9 @@ object Solver {
         val visited = HashSet<String>()
         val queue = ArrayDeque<QueueNode>()
 
-        val initialHash = RulesEngine.hash(initialState)
+        val initialHash = RulesEngine.hash(currentState)
         visited.add(initialHash)
-        queue.add(QueueNode(initialState, emptyList()))
+        queue.add(QueueNode(currentState, emptyList()))
 
         var statesExplored = 0
         var maxBranching = 0

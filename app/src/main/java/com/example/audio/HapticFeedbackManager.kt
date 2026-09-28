@@ -23,6 +23,70 @@ object HapticFeedbackManager {
     }
 
     /**
+     * Tactile feedback when the user begins dragging a trotro vehicle.
+     * Delicate initial contact pulse.
+     */
+    fun performDragStart() {
+        if (!isEnabled) return
+        val v = vibrator ?: return
+        if (!v.hasVibrator()) return
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                v.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                v.vibrate(VibrationEffect.createOneShot(18, 90))
+            } else {
+                @Suppress("DEPRECATION")
+                v.vibrate(18)
+            }
+        } catch (_: Exception) {}
+    }
+
+    /**
+     * Tactile feedback when dragging a vehicle past the activation threshold.
+     * Confident snap pulse.
+     */
+    fun performDragSnap() {
+        if (!isEnabled) return
+        val v = vibrator ?: return
+        if (!v.hasVibrator()) return
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                v.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK))
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                v.vibrate(VibrationEffect.createOneShot(28, 190))
+            } else {
+                @Suppress("DEPRECATION")
+                v.vibrate(28)
+            }
+        } catch (_: Exception) {}
+    }
+
+    /**
+     * Tactile feedback triggered when a trotro is successfully slotted into a new parking bay position.
+     * Deep, mechanical dual-pulse sensation simulating a vehicle locking into its designated bay.
+     */
+    fun performVehicleSlotted(slotIndex: Int = 0) {
+        if (!isEnabled) return
+        val v = vibrator ?: return
+        if (!v.hasVibrator()) return
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // Dual waveform: sharp contact arrival (35ms at 230), micro-pause (25ms), solid docking latch (45ms at 170)
+                val timings = longArrayOf(0, 35, 25, 45)
+                val amplitudes = intArrayOf(0, 230, 0, 170)
+                v.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
+            } else {
+                @Suppress("DEPRECATION")
+                v.vibrate(longArrayOf(0, 35, 25, 45), -1)
+            }
+        } catch (_: Exception) {}
+    }
+
+    /**
      * Tactile feedback when a trotro successfully navigates its exit trajectory.
      * Crisp, satisfying pulse.
      */

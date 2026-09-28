@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -34,6 +35,9 @@ import com.example.ui.theme.LocalAppThemeMode
 fun SlotView(
     slotIndex: Int,
     vehicle: Vehicle?,
+    isRecentlyMoved: Boolean = false,
+    moveTrigger: Long = 0L,
+    isReducedMotion: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val themeMode = LocalAppThemeMode.current
@@ -87,65 +91,79 @@ fun SlotView(
         }
 
         Box(
-            modifier = modifier
-                .height(68.dp)
-                .clip(shape)
-                .background(vColor)
-                .border(
-                    width = 2.dp,
-                    color = if (themeMode == AppThemeMode.HIGH_CONTRAST) Color.White else Color(0x88FFFFFF),
-                    shape = shape
-                )
-                .semantics {
-                    contentDescription = "Slot ${slotIndex + 1}: ${vehicle.colour.displayName} ${vehicle.type.displayName}, ${vehicle.boarded} of ${vehicle.seats} seats filled"
-                }
-                .padding(4.dp),
+            modifier = modifier.height(68.dp),
             contentAlignment = Alignment.Center
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(shape)
+                    .background(vColor)
+                    .border(
+                        width = 2.dp,
+                        color = if (themeMode == AppThemeMode.HIGH_CONTRAST) Color.White else Color(0x88FFFFFF),
+                        shape = shape
+                    )
+                    .semantics {
+                        contentDescription = "Slot ${slotIndex + 1}: ${vehicle.colour.displayName} ${vehicle.type.displayName}, ${vehicle.boarded} of ${vehicle.seats} seats filled"
+                    }
+                    .padding(4.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = vehicle.colour.symbolChar,
+                            color = vehicle.colour.onColor,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 13.sp
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = vehicle.type.displayName,
+                            color = vehicle.colour.onColor,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp,
+                            maxLines = 1
+                        )
+                    }
+
                     Text(
-                        text = vehicle.colour.symbolChar,
+                        text = "${vehicle.boarded}/${vehicle.seats}",
                         color = vehicle.colour.onColor,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 13.sp
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center
                     )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = vehicle.type.displayName,
+
+                    // Mini Seat Progress
+                    val progress = (vehicle.boarded.toFloat() / vehicle.seats.toFloat()).coerceIn(0f, 1f)
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth(0.85f)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp)),
                         color = vehicle.colour.onColor,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 10.sp,
-                        maxLines = 1
+                        trackColor = Color(0x44000000)
                     )
                 }
+            }
 
-                Text(
-                    text = "${vehicle.boarded}/${vehicle.seats}",
-                    color = vehicle.colour.onColor,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center
-                )
-
-                // Mini Seat Progress
-                val progress = (vehicle.boarded.toFloat() / vehicle.seats.toFloat()).coerceIn(0f, 1f)
-                LinearProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier
-                        .fillMaxWidth(0.85f)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp)),
-                    color = vehicle.colour.onColor,
-                    trackColor = Color(0x44000000)
+            // Subtle Road Dust particle effect around the trotro vehicle in the bay
+            if (isRecentlyMoved) {
+                RoadDustEffect(
+                    triggerKey = moveTrigger,
+                    isReducedMotion = isReducedMotion,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
         }

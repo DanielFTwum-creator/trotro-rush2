@@ -1,0 +1,167 @@
+{
+  "corridorId": "COR-N6-NSAWAM",
+  "corridorName": "Nsawam Road - Achimota - Pokuase - Amasaman Corridor",
+  "direction": "OUTBOUND",
+  "originTerminal": "Kwame Nkrumah Circle / Neoplan Station",
+  "destinationTerminal": "Nsawam Main Station",
+  "levels": [
+    {
+      "levelId": "L016",
+      "stopName": "Kwame Nkrumah Circle / Neoplan Station",
+      "canonicalLandmark": "Central intercity Neoplan terminal",
+      "sequenceIndex": 1,
+      "stopType": "TERMINAL_HUB",
+      "callout": "Nsawam, Nsawam! Express Nsawam direct!",
+      "popularSlogans": [
+        "Circle Boy",
+        "Nyame Nhyira",
+        "All Shall Pass"
+      ],
+      "tier": "BEGINNER"
+    },
+    {
+      "levelId": "L017",
+      "stopName": "Caprice / Avenor Junction",
+      "canonicalLandmark": "Caprice hotel commercial corner",
+      "sequenceIndex": 2,
+      "stopType": "ROADSIDE_STAGE",
+      "callout": "Caprice drop! Avenor one board!",
+      "popularSlogans": [
+        "No Hurry in Life",
+        "Slow But Sure"
+      ],
+      "tier": "BEGINNER"
+    },
+    {
+      "levelId": "L018",
+      "stopName": "Achimota Old Station / Forest",
+      "canonicalLandmark": "Achimota forest reserve boundary",
+      "sequenceIndex": 3,
+      "stopType": "MAJOR_JUNCTION",
+      "callout": "Achimota! Old station! Forest gate!",
+      "popularSlogans": [
+        "Who Knows Tomorrow",
+        "Envy No Man"
+      ],
+      "tier": "BEGINNER"
+    },
+    {
+      "levelId": "L019",
+      "stopName": "Achimota New Station / Overpass",
+      "canonicalLandmark": "Achimota modern transport terminal complex",
+      "sequenceIndex": 4,
+      "stopType": "TERMINAL_HUB",
+      "callout": "New Station! Overhead drop! Terminal inside!",
+      "popularSlogans": [
+        "God's Time",
+        "Sea Never Dry"
+      ],
+      "tier": "INTERMEDIATE"
+    },
+    {
+      "levelId": "L020",
+      "stopName": "Mile 7",
+      "canonicalLandmark": "Mile 7 police post & market stage",
+      "sequenceIndex": 5,
+      "stopType": "ROADSIDE_STAGE",
+      "callout": "Mile 7! Mile 7 drop!",
+      "popularSlogans": [
+        "Fear Women",
+        "Hard Work"
+      ],
+      "tier": "INTERMEDIATE"
+    },
+    {
+      "levelId": "L021",
+      "stopName": "St. John's / Dome Crossing",
+      "canonicalLandmark": "St. John's Grammar School junction",
+      "sequenceIndex": 6,
+      "stopType": "MAJOR_JUNCTION",
+      "callout": "St. John's! Dome crossing alighting!",
+      "popularSlogans": [
+        "Knowledge is Light",
+        "Patience"
+      ],
+      "tier": "INTERMEDIATE"
+    },
+    {
+      "levelId": "L022",
+      "stopName": "Taifa Junction",
+      "canonicalLandmark": "Taifa residential link road",
+      "sequenceIndex": 7,
+      "stopType": "ROADSIDE_STAGE",
+      "callout": "Taifa Junction! Bankyease board!",
+      "popularSlogans": [
+        "Time Will Tell",
+        "Destiny"
+      ],
+      "tier": "INTERMEDIATE"
+    },
+    {
+      "levelId": "L023",
+      "stopName": "Ofankor Barrier",
+      "canonicalLandmark": "Historic toll barrier checkpoint",
+      "sequenceIndex": 8,
+      "stopType": "MAJOR_JUNCTION",
+      "callout": "Ofankor Barrier! Barrier drop!",
+      "popularSlogans": [
+        "Never Give Up",
+        "Odo Nti"
+      ],
+      "tier": "INTERMEDIATE"
+    },
+    {
+      "levelId": "L024",
+      "stopName": "Pokuase Interchange / ACP",
+      "canonicalLandmark": "Four-tier Pokuase interchange hub",
+      "sequenceIndex": 9,
+      "stopType": "MAJOR_JUNCTION",
+      "callout": "Pokuase Interchange! ACP junction, flyover under!",
+      "popularSlogans": [
+        "Master of the Road",
+        "Nyame Bekyere"
+      ],
+      "tier": "RUSH_HOUR"
+    },
+    {
+      "levelId": "L025",
+      "stopName": "Amasaman Main Station",
+      "canonicalLandmark": "Ga West municipal capital depot",
+      "sequenceIndex": 10,
+      "stopType": "TERMINAL_HUB",
+      "callout": "Amasaman! Municipal station drop!",
+      "popularSlogans": [
+        "Home Sweet Home",
+        "By Grace"
+      ],
+      "tier": "RUSH_HOUR"
+    },
+    {
+      "levelId": "L026",
+      "stopName": "Medie / Papase",
+      "canonicalLandmark": "Pineapple farming peri-urban stage",
+      "sequenceIndex": 11,
+      "stopType": "ROADSIDE_STAGE",
+      "callout": "Medie drop! Fresh fruit side!",
+      "popularSlogans": [
+        "Work and Happiness",
+        "On God"
+      ],
+      "tier": "RUSH_HOUR"
+    },
+    {
+      "levelId": "L027",
+      "stopName": "Nsawam Main Station",
+      "canonicalLandmark": "Eastern Region boundary railway terminal",
+      "sequenceIndex": 12,
+      "stopType": "TERMINAL_HUB",
+      "callout": "Nsawam last stop! Cannery side, everybody out!",
+      "popularSlogans": [
+        "Journey of Mercies",
+        "God is Good",
+        "Winner"
+      ],
+      "tier": "RUSH_HOUR"
+    }
+  ]
+}

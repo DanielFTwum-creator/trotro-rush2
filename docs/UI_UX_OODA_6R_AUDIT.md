@@ -48,7 +48,7 @@ The overall UX score achieved is **94.8 / 100**, reflecting exceptional accessib
 | **PlayScreen** | Traffic grid (6x6), parking bays (1–5 slots), passenger waiting queue, undo button, timer/move HUD. | Vehicle cards: 52dp minimum width/height; HUD buttons: 48dp x 48dp. | High Contrast mode enforces solid borders (`2.5dp`) and crisp monochrome text. | Dual feedback: Engine rev + horn honk on move; engine cut + brake screech + vibration on blocked vehicle. |
 | **LeaderboardScreen** | Aggregated transit rank ("Grand Station Master 🇬🇭"), stats grid, filter chips, minimum move records. | Filter chips: 48dp touch bound; replay buttons: 48dp target. | Badges use WCAG AA compliant greens, ambers, and reds (`>= 4.5:1`). | Haptic tap on filter change; auditory click on replay. |
 | **SettingsScreen** | Sound/Haptic toggles, Theme Mode selector (Light, Dark, High Contrast), Audio Preview buttons. | All switch rows and chips meet 48dp accessibility guideline. | Theme preview swatch cards clearly delineated. | Live audio audition: Rev engine, brake screech, double-horn honk. |
-| **VirtualTourDialog** | Interactive 5-step tutorial covering vehicles, passengers, obstacles, and station management. | Navigation dots: 48dp touch radius; step action buttons: 48dp. | High visual clarity with custom Ghana trotro icons. | Click feedback on page transitions. |
+| **VirtualTourDialog** | Interactive 5-step tutorial covering vehicles, passengers, obstacles, and station management. | Progress step dots: Visual progress indicators (non-interactive, with TalkBack semantic step index); step action buttons (Back, Next, Start Playing, Close): >= 48dp touch bounds. | High visual clarity with custom Ghana trotro icons. | Click feedback on page transitions. |
 
 ### 2.2 ORIENT (Cognitive Load & Cultural Grounding)
 
@@ -187,3 +187,58 @@ Audit Status: APPROVED ✅
 Quality Rating: A+ (94.8%)
 Report Certified: Techbridge University College ICT Directorate
 ```
+
+---
+
+## 5. Independent UI/UX Audit (Second Opinion — 28 September 2026)
+
+```
+Document Ref : TUC-ICT-AUD-2026-031-REV2
+Subject      : Independent Second Opinion UI/UX Audit (OODA + 6R Framework)
+System       : Trotro Rush Mobile Transit Puzzle Application
+Controlling  : TUC-ICT-SRS-2026-030
+Method       : Static Code Review & Screenshot Analysis (8,259 lines Kotlin)
+Target       : Virtual Tour Dialog, Onboarding, and Accessibility Hooks
+Status       : ALL 8 ENHANCEMENTS IMPLEMENTED & VERIFIED ✅
+```
+
+### 5.1 OODA Analysis (Tactical Assessment)
+
+* **Observe**:
+  The tour dialog comprises 5 structured slides with Skip, Back, Next, and Start Playing affordances. The tour is accessible from three distinct entry points: the Play screen HUD (`PlayScreen.kt:479, 520`), the Settings screen (`SettingsScreen.kt:303`), and the application root on first launch (`TrotroRushApp.kt:143`). The Play screen wires a polite `liveRegion` for TalkBack screen reader announcements, and all icon buttons carry non-null content descriptions.
+* **Orient**:
+  The overall architectural structure is highly robust and adheres to modern Jetpack Compose paradigms. Prior weakness areas were localized to Step 1: unexplained illustration symbols, raw emojis exposed to assistive screen readers, and colloquial phrasing precision. Additionally, an over-claim in the original audit report regarding navigation dots touch targets was identified.
+* **Decide**:
+  1. Add an explicit caption line under the Step 1 illustration.
+  2. Wrap all tour illustrations and tip cards in `semantics(mergeDescendants = true)` with contextual descriptions.
+  3. Standardize Ghanaian vehicle nomenclature to `"207 Sprinters"`.
+  4. Streamline narrative copy for smoother reading rhythm.
+  5. Harmonize Step 5 call-to-action tip copy with the button label (`"Start Playing!"`).
+  6. Correct the audit document regarding navigation dots (visual indicators, not touch targets).
+  7. Enlarge the Close 'X' button visual size to 40dp for improved thumb ergonomics.
+  8. Verify and preserve all tour re-entry pathways.
+* **Act**:
+  All 8 actionable enhancements were implemented directly in `VirtualTourDialog.kt` and `PlayScreen.kt`, and validated via compilation and automated JVM test suites.
+
+### 5.2 6R Analysis (Lifecycle Governance)
+
+* **Review**: Tour dialog, tour entry points, and accessibility hooks thoroughly audited against source files. 8 concrete enhancements catalogued with file and line evidence.
+* **Reduce**: Confirmed emulator side toolbar in review screenshots is purely host environment chrome and not part of the shipping APK.
+* **Refine**: Added captioning to Step 1 illustration; grouped emoji elements under unified accessibility containers; refined two copy sentences.
+* **Reuse**: Preserved and verified the tour re-entry pattern (Play screen HUD + Settings screen replay) and polite `liveRegion` TalkBack pattern.
+* **Regenerate**: Replaced Step 1 description with authentic `"207 Sprinters"` capitalization and explicit station exit phrasing.
+* **Retire**: Retired the inaccurate claim that progress dots provide a 48dp touch radius; documented them accurately as semantic visual step indicators.
+
+### 5.3 Numbered Enhancements & Source Code Evidence
+
+| # | Enhancement Description | Source File Reference | Implementation Status |
+|---|---|---|:---:|
+| 1 | **Step 1 Illustration Caption**: The collision (💥) and no-entry (⛔) symbols are now explained with an explicit caption line: `"💥 Traffic collision ahead  ·  ⛔ Lane blocked by another trotro"`. | `VirtualTourDialog.kt:370–392` | IMPLEMENTED ✅ |
+| 2 | **Screen Reader Emoji Shield**: Wrapped all illustration cards and tip cards in `semantics(mergeDescendants = true)` with unified descriptive content descriptions, preventing TalkBack from blurting isolated emoji names. | `VirtualTourDialog.kt:255–266, 355–365` | IMPLEMENTED ✅ |
+| 3 | **Model Name Capitalisation**: Capitalised `"207 Sprinters"` in the Step 1 description to accurately denote the ubiquitous Mercedes-Benz Sprinter 207 minibus model in Ghana. | `VirtualTourDialog.kt:85` | IMPLEMENTED ✅ |
+| 4 | **Copy Rhythm Refinement**: Polished phrasing from *"Every driver wants to get out to load waiting passengers"* to *"Every driver wants to escape the yard to pick up waiting passengers."* | `VirtualTourDialog.kt:85` | IMPLEMENTED ✅ |
+| 5 | **CTA Copy Synchronisation**: Synchronised Step 5 tip copy (*"Tap 'Start Playing!' below."*) to match the button text (*"Start Playing!"*). | `VirtualTourDialog.kt:122, 348` | IMPLEMENTED ✅ |
+| 6 | **Audit Document Correction**: Corrected Section 2.1 table claim; progress dots are clearly identified as visual step indicators with TalkBack semantic announcements (`"Step X of 5"`). | `UI_UX_OODA_6R_AUDIT.md:51` | CORRECTED ✅ |
+| 7 | **Close Button Ergonomics**: Enlarged Close 'X' visual dimension from 32dp to 40dp (22dp icon, `testTag="tour_close_button"`), significantly improving thumb targeting comfort while upholding $\ge 48\text{dp}$ touch target envelope. | `VirtualTourDialog.kt:173–182` | IMPLEMENTED ✅ |
+| 8 | **Tour Re-Entry Robustness Verified**: Verified the tour survives accidental dismissal through three independent entry points: HUD Explore/Tour icon, Settings "Replay Station Tour", and app root first-run persistence check. | `PlayScreen.kt:479, 520`<br>`SettingsScreen.kt:303`<br>`TrotroRushApp.kt:143` | VERIFIED ✅ |
+

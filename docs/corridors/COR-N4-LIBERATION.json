@@ -1,0 +1,212 @@
+{
+  "corridorId": "COR-N4-LIBERATION",
+  "corridorName": "Liberation Road - Legon - Madina - Adenta Arterial Corridor",
+  "direction": "OUTBOUND",
+  "originTerminal": "Tema Station / CMB",
+  "destinationTerminal": "Adenta Barrier / Housing",
+  "levels": [
+    {
+      "levelId": "L001",
+      "stopName": "Tema Station / CMB",
+      "canonicalLandmark": "Accra Central dispatch yard",
+      "sequenceIndex": 1,
+      "stopType": "TERMINAL_HUB",
+      "callout": "Madina! Madina direct, Madina!",
+      "popularSlogans": [
+        "God's Time",
+        "Nyame Nhyira",
+        "Sea Never Dry"
+      ],
+      "tier": "BEGINNER"
+    },
+    {
+      "levelId": "L002",
+      "stopName": "Ridge / Cedi House",
+      "canonicalLandmark": "Financial district passenger alighting",
+      "sequenceIndex": 2,
+      "stopType": "ROADSIDE_STAGE",
+      "callout": "Ridge drop, Cedi House, one board!",
+      "popularSlogans": [
+        "All Shall Pass",
+        "Work and Happiness"
+      ],
+      "tier": "BEGINNER"
+    },
+    {
+      "levelId": "L003",
+      "stopName": "Police Headquarters / Danquah Link",
+      "canonicalLandmark": "Ring Road East intersection",
+      "sequenceIndex": 3,
+      "stopType": "ROADSIDE_STAGE",
+      "callout": "Headquarters, Danquah Link, front seat one!",
+      "popularSlogans": [
+        "Odo Nti",
+        "No Hurry in Life"
+      ],
+      "tier": "BEGINNER"
+    },
+    {
+      "levelId": "L004",
+      "stopName": "37 Military Hospital",
+      "canonicalLandmark": "37 Station / Lorry Park interchange",
+      "sequenceIndex": 4,
+      "stopType": "MAJOR_JUNCTION",
+      "callout": "37 Station! Hospital gate! Legon Madina board!",
+      "popularSlogans": [
+        "Who Knows Tomorrow",
+        "The Lord is My Shepherd",
+        "Still Moving"
+      ],
+      "tier": "BEGINNER"
+    },
+    {
+      "levelId": "L005",
+      "stopName": "Airport Junction / Silver Star",
+      "canonicalLandmark": "Airport bypass stage",
+      "sequenceIndex": 5,
+      "stopType": "ROADSIDE_STAGE",
+      "callout": "Airport, Silver Star drop!",
+      "popularSlogans": [
+        "Don't Give Up",
+        "Patience"
+      ],
+      "tier": "BEGINNER"
+    },
+    {
+      "levelId": "L006",
+      "stopName": "Spanner",
+      "canonicalLandmark": "Pedestrian overpass stage before Tetteh Quarshie",
+      "sequenceIndex": 6,
+      "stopType": "ROADSIDE_STAGE",
+      "callout": "Spanner under bridge! Spanner drop!",
+      "popularSlogans": [
+        "Fear Women",
+        "Only God"
+      ],
+      "tier": "INTERMEDIATE"
+    },
+    {
+      "levelId": "L007",
+      "stopName": "Tetteh Quarshie / Shiashie",
+      "canonicalLandmark": "Shiashie village entrance",
+      "sequenceIndex": 7,
+      "stopType": "MAJOR_JUNCTION",
+      "callout": "Shiashie! Tetteh Quarshie interchange, one drop!",
+      "popularSlogans": [
+        "Envy No Man",
+        "Destiny",
+        "Hard Work"
+      ],
+      "tier": "INTERMEDIATE"
+    },
+    {
+      "levelId": "L008",
+      "stopName": "Okponglo",
+      "canonicalLandmark": "Legon bypass drop-off",
+      "sequenceIndex": 8,
+      "stopType": "ROADSIDE_STAGE",
+      "callout": "Okponglo drop! Small change, hold your coins!",
+      "popularSlogans": [
+        "On God",
+        "Never Give Up"
+      ],
+      "tier": "INTERMEDIATE"
+    },
+    {
+      "levelId": "L009",
+      "stopName": "Legon Campus / Staff Gate",
+      "canonicalLandmark": "University of Ghana primary entrance",
+      "sequenceIndex": 9,
+      "stopType": "MAJOR_JUNCTION",
+      "callout": "Legon gate! Staff gate! Students get down!",
+      "popularSlogans": [
+        "Knowledge is Power",
+        "Great Legon",
+        "Life is War"
+      ],
+      "tier": "INTERMEDIATE"
+    },
+    {
+      "levelId": "L010",
+      "stopName": "Presec / Firestone",
+      "canonicalLandmark": "Presbyterian Boys' Secondary School gate",
+      "sequenceIndex": 10,
+      "stopType": "ROADSIDE_STAGE",
+      "callout": "Presec drop! Firestone bus stop!",
+      "popularSlogans": [
+        "Blue Magic",
+        "In God We Trust"
+      ],
+      "tier": "INTERMEDIATE"
+    },
+    {
+      "levelId": "L011",
+      "stopName": "Atomic Junction",
+      "canonicalLandmark": "Nuclear / Haatso arterial turnoff",
+      "sequenceIndex": 11,
+      "stopType": "MAJOR_JUNCTION",
+      "callout": "Atomic! Atomic flyover, Haatso branch!",
+      "popularSlogans": [
+        "Nyame Bekyere",
+        "Time Will Tell",
+        "Boafo Ne Awurade"
+      ],
+      "tier": "RUSH_HOUR"
+    },
+    {
+      "levelId": "L012",
+      "stopName": "Madina Zongo Junction",
+      "canonicalLandmark": "Madina urban commercial core",
+      "sequenceIndex": 12,
+      "stopType": "MAJOR_JUNCTION",
+      "callout": "Zongo Junction! Market side, alighting here!",
+      "popularSlogans": [
+        "Baraka",
+        "Alhamdulillah",
+        "Show Love"
+      ],
+      "tier": "RUSH_HOUR"
+    },
+    {
+      "levelId": "L013",
+      "stopName": "Madina Main Station / Redco",
+      "canonicalLandmark": "Primary municipal lorry terminal",
+      "sequenceIndex": 13,
+      "stopType": "TERMINAL_HUB",
+      "callout": "Madina Station last stop! Redco yard!",
+      "popularSlogans": [
+        "Station Master",
+        "Sea Never Dry",
+        "Home Sweet Home"
+      ],
+      "tier": "RUSH_HOUR"
+    },
+    {
+      "levelId": "L014",
+      "stopName": "Ritz Junction",
+      "canonicalLandmark": "Old barrier commercial node",
+      "sequenceIndex": 14,
+      "stopType": "MAJOR_JUNCTION",
+      "callout": "Ritz Junction! Adenta side, one to go!",
+      "popularSlogans": [
+        "Abaawa",
+        "By Grace"
+      ],
+      "tier": "RUSH_HOUR"
+    },
+    {
+      "levelId": "L015",
+      "stopName": "Adenta Barrier / Housing",
+      "canonicalLandmark": "Outer northern boundary depot",
+      "sequenceIndex": 15,
+      "stopType": "TERMINAL_HUB",
+      "callout": "Adenta Barrier! Housing last stop! Everybody down!",
+      "popularSlogans": [
+        "God is Good",
+        "Journey of Mercies",
+        "Winner Never Quits"
+      ],
+      "tier": "RUSH_HOUR"
+    }
+  ]
+}
