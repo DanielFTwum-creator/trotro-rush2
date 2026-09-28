@@ -1,0 +1,6 @@
+{
+  "name": "Trotro Rush",
+  "description": "Colour-matching traffic-jam puzzle game with Ghanaian trotro theme, deterministic rules engine and CI solver",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
