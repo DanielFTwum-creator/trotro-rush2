@@ -50,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -269,13 +270,13 @@ fun VirtualTourDialog(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // Tip Card with grouped TalkBack announcement
+                        // Tip Card with grouped TalkBack announcement (avoid raw emoji readout)
                         Card(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .semantics(mergeDescendants = true) {
+                                .clearAndSetSemantics {
                                     contentDescription = "Station Master Tip: ${current.tip}"
                                 }
                         ) {
@@ -390,7 +391,7 @@ private fun TourStepIllustration(stepIndex: Int) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .semantics(mergeDescendants = true) {
+            .clearAndSetSemantics {
                 contentDescription = illustrationSemantic
             },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),

@@ -234,7 +234,7 @@ Status       : ALL 8 ENHANCEMENTS IMPLEMENTED & VERIFIED ✅
 | # | Enhancement Description | Source File Reference | Implementation Status |
 |---|---|---|:---:|
 | 1 | **Step 1 Illustration Caption**: The collision (💥) and no-entry (⛔) symbols are now explained with an explicit caption line: `"💥 Traffic collision ahead  ·  ⛔ Lane blocked by another trotro"`. | `VirtualTourDialog.kt:370–392` | IMPLEMENTED ✅ |
-| 2 | **Screen Reader Emoji Shield**: Wrapped all illustration cards and tip cards in `semantics(mergeDescendants = true)` with unified descriptive content descriptions, preventing TalkBack from blurting isolated emoji names. | `VirtualTourDialog.kt:255–266, 355–365` | IMPLEMENTED ✅ |
+| 2 | **Screen Reader Emoji Shield**: Wrapped all illustration cards and tip cards in `clearAndSetSemantics` with unified descriptive content descriptions, preventing TalkBack from blurting isolated emoji names like "collision", "no entry", and "light bulb". | `VirtualTourDialog.kt:278, 393` | IMPLEMENTED ✅ |
 | 3 | **Model Name Capitalisation**: Capitalised `"207 Sprinters"` in the Step 1 description to accurately denote the ubiquitous Mercedes-Benz Sprinter 207 minibus model in Ghana. | `VirtualTourDialog.kt:85` | IMPLEMENTED ✅ |
 | 4 | **Copy Rhythm Refinement**: Polished phrasing from *"Every driver wants to get out to load waiting passengers"* to *"Every driver wants to escape the yard to pick up waiting passengers."* | `VirtualTourDialog.kt:85` | IMPLEMENTED ✅ |
 | 5 | **CTA Copy Synchronisation**: Synchronised Step 5 tip copy (*"Tap 'Start Playing!' below."*) to match the button text (*"Start Playing!"*). | `VirtualTourDialog.kt:122, 348` | IMPLEMENTED ✅ |
